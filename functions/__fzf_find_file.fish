@@ -1,10 +1,10 @@
-function __fzf_find_file -d "List files and folders"
-    set -l commandline (__fzf_parse_commandline)
-    set -l dir $commandline[1]
-    set -l fzf_query $commandline[2]
+function __fzf_find_file --description "List files and folders"
+    set --local commandline (__fzf_parse_commandline)
+    set --local dir $commandline[1]
+    set --local fzf_query $commandline[2]
 
-    set -q FZF_FIND_FILE_COMMAND
-    or set -l FZF_FIND_FILE_COMMAND "
+    set --query FZF_FIND_FILE_COMMAND
+    or set --local FZF_FIND_FILE_COMMAND "
     command find -L \$dir -mindepth 1 \\( -path \$dir'*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
     -o -type f -print \
     -o -type d -print \
@@ -17,19 +17,21 @@ function __fzf_find_file -d "List files and folders"
     end
 
     begin
-        eval "$FZF_FIND_FILE_COMMAND | "(__fzfcmd) "-m $FZF_DEFAULT_OPTS $FZF_FIND_FILE_OPTS --query \"$fzf_query\"" | while read -l s; set results $results $s; end
+        eval "$FZF_FIND_FILE_COMMAND | $fzf_command --multi $FZF_DEFAULT_OPTS $FZF_FIND_FILE_OPTS $query_opts" | while read --local s
+            set results $results $s
+        end
     end
 
     if test -z "$results"
-        commandline -f repaint
+        commandline --function repaint
         return
     else
-        commandline -t ""
+        commandline --tokenize ""
     end
 
     for result in $results
-        commandline -it -- (string escape $result)
-        commandline -it -- " "
+        commandline --insert -- (string escape $result)
+        commandline --insert -- " "
     end
-    commandline -f repaint
+    commandline --function repaint
 end
