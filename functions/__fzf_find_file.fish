@@ -10,6 +10,12 @@ function __fzf_find_file -d "List files and folders"
     -o -type d -print \
     -o -type l -print 2> /dev/null | sed 's@^\./@@'"
 
+    set --local fzf_command (__fzfcmd)
+    set --local query_opts
+    if test -n "$fzf_query"
+        set query_opts "--query=$fzf_query"
+    end
+
     begin
         eval "$FZF_FIND_FILE_COMMAND | "(__fzfcmd) "-m $FZF_DEFAULT_OPTS $FZF_FIND_FILE_OPTS --query \"$fzf_query\"" | while read -l s; set results $results $s; end
     end
