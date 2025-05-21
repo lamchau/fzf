@@ -22,7 +22,7 @@ All functions:
 Install with [Fisher](https://github.com/jorgebucaran/fisher):
 
 ```console
-fisher install jethrokuan/fzf
+fisher install lamchau/fzf
 ```
 
 ## Quickstart
@@ -79,7 +79,7 @@ set -U FZF_DISABLE_KEYBINDINGS 1
 
 This package ships with a `fzf` widget for fancy tab completions.
 
-Please see [the wiki page](https://github.com/jethrokuan/fzf/wiki/FZF-Tab-Completions) for details.
+Please see [the wiki page](https://github.com/lamchau/fzf/wiki/FZF-Tab-Completions) for details.
 
 ## Alternatives
 
