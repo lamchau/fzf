@@ -16,17 +16,16 @@ function __fzf_find_file --description "List files and folders"
         set query_opts "--query=$fzf_query"
     end
 
-    begin
-        eval "$FZF_FIND_FILE_COMMAND | $fzf_command --multi $FZF_DEFAULT_OPTS $FZF_FIND_FILE_OPTS $query_opts" | while read --local s
-            set results $results $s
-        end
+    set --local results
+    eval "$FZF_FIND_FILE_COMMAND | $fzf_command --multi $FZF_DEFAULT_OPTS $FZF_FIND_FILE_OPTS $query_opts" | while read --local s
+        set results $results $s
     end
 
     if test -z "$results"
         commandline --function repaint
         return
     else
-        commandline --tokenize ""
+        commandline --cut-at-cursor --current-token
     end
 
     for result in $results
