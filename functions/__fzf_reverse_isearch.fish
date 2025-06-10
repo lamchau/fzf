@@ -2,6 +2,7 @@ function __fzf_reverse_isearch
     history merge
     history -z --show-time="%F %H:%M:%S │ " \
         | eval (__fzfcmd) \
+        --scheme=history \
         --read0 \
         --print0 \
         --tiebreak=index \
