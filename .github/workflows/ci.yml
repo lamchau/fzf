@@ -7,16 +7,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Install Fish
+      - uses: actions/checkout@v4
+
+      - name: Install fish 4.x
         run: |
-          sudo apt-add-repository -yn ppa:fish-shell/release-3
+          sudo apt-add-repository -yn ppa:fish-shell/release-4
           sudo apt-get update
           sudo apt-get install -y fish
 
-      - name: Install Tools
+      - name: Install fzf
         run: |
-          curl -sL https://git.io/fisher | source
+          FZF_VERSION=$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep tag_name | cut -d'"' -f4 | sed 's/^v//')
+          curl -sL "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_amd64.tar.gz" | sudo tar xzf - -C /usr/local/bin
+
+      - name: Verify versions
+        run: |
+          fish --version
+          fzf --version
+
+      - name: Install plugin and verify
+        run: |
+          curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
           fisher install $GITHUB_WORKSPACE
-          bind --user | string match --entire __fzf
+
+          # Verify keybindings are set
+          bind --user | string match --entire --regex __fzf
+
+          # Verify all functions exist
+          for fn in __fzf_find_file __fzf_reverse_isearch __fzf_cd __fzf_open __fzf_parse_commandline __fzfcmd __fzf_defaults
+            type -q $fn; or begin; echo "FAIL: $fn not found"; exit 1; end
+          end
+
+          # Verify deleted function is gone
+          not type -q __fzf_get_dir; or begin; echo "FAIL: __fzf_get_dir should not exist"; exit 1; end
+
+          echo "All checks passed"
         shell: fish {0}
