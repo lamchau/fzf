@@ -1,17 +1,15 @@
 function __fzf_reverse_isearch
-    history merge
-    history -z --show-time="%F %H:%M:%S │ " \
-        | eval (__fzfcmd) \
-        --scheme=history \
-        --read0 \
-        --print0 \
-        --tiebreak=index \
-        --toggle-sort=ctrl-r \
-        $FZF_DEFAULT_OPTS \
-        $FZF_REVERSE_ISEARCH_OPTS \
-        -q '(commandline)' \
-        | cut -d'│' -f2- \
-        | read -lz result
+    test -z "$fish_private_mode"; and history merge
+
+    set --local --export FZF_DEFAULT_OPTS (__fzf_defaults "" \
+        "--scheme=history --read0 --print0 --tiebreak=index --toggle-sort=ctrl-r --highlight-line $FZF_REVERSE_ISEARCH_OPTS")
+    set --local --export FZF_DEFAULT_OPTS_FILE
+
+    history --null --show-time="%F %H:%M:%S │ " \
+        | eval (__fzfcmd) --query '(commandline)' \
+        | string split0 \
+        | string replace --regex '^.*? │ ' '' \
+        | read --local --null result
     and commandline -- $result
-    commandline -f repaint
+    commandline --function repaint
 end
