@@ -1,23 +1,30 @@
-function __fzf_parse_commandline -d 'Parse the current command line token and return split of existing filepath and rest of token'
-    # eval is used to do shell expansion on paths
-    set -l commandline (eval "printf '%s' "(commandline -t))
+function __fzf_parse_commandline --description 'Parse the current command line token and return dir, fzf_query, prefix'
+    set --local fzf_query ''
+    set --local prefix ''
+    set --local dir '.'
 
-    if test -z $commandline
-        # Default to current directory with no --query
-        set dir '.'
-        set fzf_query ''
-    else
-        set dir (__fzf_get_dir $commandline)
+    # fish 4.x: --tokens-expanded handles ~ and $var expansion
+    set --local commandline_token (commandline --current-token --tokens-expanded)
 
-        if test "$dir" = "." -a (string sub -l 1 $commandline) != '.'
-            # if $dir is "." but commandline is not a relative path, this means no file path found
-            set fzf_query $commandline
-        else
-            # Also remove trailing slash after dir, to "split" input properly
-            set fzf_query (string replace -r "^$dir/?" '' "$commandline")
+    if test -n "$commandline_token"
+        # Extract -option= prefix if present (e.g., --file=path)
+        if string match --quiet --regex -- '^-[^\s=]+=|^-(?!-)\S' "$commandline_token"
+            set prefix (string match --regex -- '^-[^\s=]+=|^-(?!-)\S' "$commandline_token")
+            set commandline_token (string replace -- "$prefix" '' "$commandline_token")
+        end
+
+        # Normalize the path and find the longest existing directory
+        set fzf_query (path normalize -- $commandline_token)
+        set dir $fzf_query
+        while not path is -d -- $dir
+            set dir (path dirname -- $dir)
+        end
+
+        # Split dir from query
+        if not string match --quiet -- '.' $dir; or string match --quiet --regex -- '^\./|^\.$' $fzf_query
+            string match --quiet --regex -- '^'(string escape --style=regex -- $dir)'/?(?<fzf_query>[\s\S]*)' $fzf_query
         end
     end
 
-    echo $dir
-    echo $fzf_query
+    string escape --no-quoted -- "$dir" "$fzf_query" "$prefix"
 end
