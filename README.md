@@ -1,4 +1,4 @@
-# Fzf
+# fzf
 
 Integrate [fzf](https://github.com/junegunn/fzf) (command-line fuzzy finder) functionality into [Fish](https://github.com/fish-shell/fish-shell). Includes handy functions to:
 
@@ -10,14 +10,15 @@ Integrate [fzf](https://github.com/junegunn/fzf) (command-line fuzzy finder) fun
 All functions:
 
 - are lazily-loaded to keep shell startup time down
-- have configurable key bindings
+- use fzf's `--walker` for fast file/directory traversal
+- support `FZF_DEFAULT_OPTS_FILE` for persistent configuration
 
 ## Installation
 
 ### System Requirements
 
-- [fzf](https://github.com/junegunn/fzf) >= `0.11.3`
-- [Fish](https://github.com/fish-shell/fish-shell) >= `2.4.0`
+- [fzf](https://github.com/junegunn/fzf) >= `0.60`
+- [Fish](https://github.com/fish-shell/fish-shell) >= `4.0`
 
 Install with [Fisher](https://github.com/jorgebucaran/fisher):
 
@@ -25,68 +26,88 @@ Install with [Fisher](https://github.com/jorgebucaran/fisher):
 fisher install lamchau/fzf
 ```
 
-## Quickstart
-
-| Legacy      | New Keybindings | Remarks                                         |
-| ----------- | --------------- | ----------------------------------------------- |
-| Ctrl-t      | Ctrl-o          | Find a file.                                    |
-| Ctrl-r      | Ctrl-r          | Search through command history.                 |
-| Alt-c       | Alt-c           | cd into sub-directories (recursively searched). |
-| Alt-Shift-c | Alt-Shift-c     | cd into sub-directories, including hidden ones. |
-| Ctrl-o      | Alt-o           | Open a file/dir using default editor ($EDITOR)  |
-| Ctrl-g      | Alt-Shift-o     | Open a file/dir using xdg-open or open command  |
-
-Legacy keybindings are kept by default, but these have conflict with key bindings in Fish 2.4.0. If you want to use the new keybindings, ƒenter the following into your terminal:
+Keybindings are set up automatically via Fisher's event lifecycle. To re-apply them manually:
 
 ```fish
-set -U FZF_LEGACY_KEYBINDINGS 0
+fzf_key_bindings
 ```
 
-You can disable default keybindings altogether by running:
+## Keybindings
+
+| Key           | Function                          | Description                                      |
+| ------------- | --------------------------------- | ------------------------------------------------ |
+| Ctrl-O        | `__fzf_find_file`                 | Find a file or directory                         |
+| Ctrl-R        | `__fzf_reverse_isearch`           | Search through command history                   |
+| Alt-C         | `__fzf_cd`                        | cd into sub-directories (recursively searched)   |
+| Alt-Shift-C   | `__fzf_cd --hidden`               | cd into sub-directories, including hidden ones   |
+| Alt-O         | `__fzf_open`                      | Open a file in `$EDITOR`                         |
+
+All bindings are set in both default and vi insert modes.
+
+You can disable keybindings altogether:
 
 ```fish
-set -U FZF_DISABLE_KEYBINDINGS 1
+set --global FZF_DISABLE_KEYBINDINGS 1
 ```
 
-> **Note:** On OS X, <kbd>Alt</kbd>+<kbd>C</kbd> (Option-C) types ç by default. In iTerm2, you can send the right escape sequence with <kbd>Esc</kbd>+<kbd>C</kbd>. If you configure the option key to act as +Esc (iTerm2 Preferences > Profiles > Default > Keys > Left option (⌥) acts as: > +Esc), then <kbd>Alt</kbd>+<kbd>C</kbd> will work for `fzf` as documented.
-
-## Commands
-
-| Variable                     | Remarks                                                     | Example                                                                                                                                                                                      |
-| ---------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FZF_FIND_FILE_COMMAND`      | Modify the command used to generate the list of files       | `set -U FZF_FIND_FILE_COMMAND "ag -l --hidden --ignore .git . \$dir 2> /dev/null"` or `set -U FZF_FIND_FILE_COMMAND "fd --type f . \$dir"` (`$dir` represents the directory being completed) |
-| `FZF_CD_COMMAND`             | Similar to ^                                                | Similar to ^                                                                                                                                                                                 |
-| `FZF_CD_WITH_HIDDEN_COMMAND` | Similar to ^                                                | Similar to ^                                                                                                                                                                                 |
-| `FZF_OPEN_COMMAND`           | Similar to ^                                                | Similar to ^                                                                                                                                                                                 |
-| `FZF_PREVIEW_FILE_CMD`       | Modify the command used to generate preview of files.       | `set -U FZF_PREVIEW_FILE_CMD "head -n 10"`                                                                                                                                                   |
-| `FZF_PREVIEW_DIR_CMD`        | Modify the command used to generate preview of directories. | `set -U FZF_PREVIEW_DIR_CMD "ls"`                                                                                                                                                            |
+> **Note:** On macOS, <kbd>Alt</kbd>+<kbd>C</kbd> (Option-C) types c by default. In iTerm2, you can send the right escape sequence with <kbd>Esc</kbd>+<kbd>C</kbd>. If you configure the option key to act as +Esc (iTerm2 Preferences > Profiles > Default > Keys > Left option key acts as: > Esc+), then <kbd>Alt</kbd>+<kbd>C</kbd> will work for `fzf` as documented.
 
 ## Variables
 
-| Variable                   | Remarks                                                       | Example                                               |
-| -------------------------- | ------------------------------------------------------------- | ----------------------------------------------------- |
-| `FZF_DEFAULT_OPTS`         | Default options passed to every fzf command                   | `set -U FZF_DEFAULT_OPTS "--height 40"`               |
-| `FZF_FIND_FILE_OPTS`       | Pass in additional arguments to the fzf command for find file | `set -U FZF_FIND_FILE_OPTS "--reverse --inline-info"` |
-| `FZF_CD_OPTS`              | Similar to ^                                                  | Similar to ^                                          |
-| `FZF_CD_WITH_HIDDEN_OPTS`  | Similar to ^                                                  | Similar to ^                                          |
-| `FZF_REVERSE_ISEARCH_OPTS` | Similar to ^                                                  | Similar to ^                                          |
-| `FZF_OPEN_OPTS`            | Similar to ^                                                  | Similar to ^                                          |
-| `FZF_COMPLETE_OPTS`        | Similar to ^                                                  | Similar to ^                                          |
-| `FZF_TMUX`                 | Runs a tmux-friendly version of fzf instead.                  | `set -U FZF_TMUX 1`                                   |
-| `FZF_ENABLE_OPEN_PREVIEW`  | Enable preview window open command.                           | `set -U FZF_ENABLE_OPEN_PREVIEW 1`                    |
+### Source commands
 
-## `fzf` Tab Completions
+Override the file listing command for each function. The variable `$dir` is available as the search root.
 
-This package ships with a `fzf` widget for fancy tab completions.
+| Variable              | Function        | Example                                       |
+| --------------------- | --------------- | --------------------------------------------- |
+| `FZF_CTRL_T_COMMAND`  | Ctrl-O (find)   | `set --global FZF_CTRL_T_COMMAND "fd --type f . \$dir"` |
+| `FZF_ALT_C_COMMAND`   | Alt-C (cd)      | `set --global FZF_ALT_C_COMMAND "fd --type d . \$dir"`  |
+| `FZF_OPEN_COMMAND`    | Alt-O (open)    | `set --global FZF_OPEN_COMMAND "fd --type f . \$dir"`    |
 
-Please see [the wiki page](https://github.com/lamchau/fzf/wiki/FZF-Tab-Completions) for details.
+### Extra fzf options
+
+Pass additional options to fzf for each function.
+
+| Variable                   | Function        | Example                                               |
+| -------------------------- | --------------- | ----------------------------------------------------- |
+| `FZF_DEFAULT_OPTS`         | All commands    | `set --global FZF_DEFAULT_OPTS "--height 40%"`        |
+| `FZF_DEFAULT_OPTS_FILE`    | All commands    | Path to a file containing default fzf options          |
+| `FZF_CTRL_T_OPTS`          | Ctrl-O (find)   | `set --global FZF_CTRL_T_OPTS "--reverse --inline-info"` |
+| `FZF_ALT_C_OPTS`           | Alt-C (cd)      | Similar to above                                       |
+| `FZF_REVERSE_ISEARCH_OPTS` | Ctrl-R (history)| Similar to above                                       |
+| `FZF_OPEN_OPTS`            | Alt-O (open)    | Similar to above                                       |
+
+### Other settings
+
+| Variable                  | Description                                          | Example                                     |
+| ------------------------- | ---------------------------------------------------- | ------------------------------------------- |
+| `FZF_TMUX`                | Use fzf-tmux instead of fzf                          | `set --global FZF_TMUX 1`                   |
+| `FZF_TMUX_OPTS`           | Options passed to fzf-tmux                           | `set --global FZF_TMUX_OPTS "-p 80%"`       |
+| `FZF_ENABLE_OPEN_PREVIEW` | Enable file preview in the open command               | `set --global FZF_ENABLE_OPEN_PREVIEW 1`    |
+| `FZF_PREVIEW_FILE_CMD`    | Command for file preview                              | `set --global FZF_PREVIEW_FILE_CMD "head -n 10"` |
+| `FZF_PREVIEW_DIR_CMD`     | Command for directory preview                         | `set --global FZF_PREVIEW_DIR_CMD "ls"`     |
+| `FZF_COMPLETE`            | Enable fzf tab completion (opt-in)                    | `set --global FZF_COMPLETE 1`               |
+
+## Tab Completions
+
+This package ships with a `fzf` widget for tab completions. To enable, set `FZF_COMPLETE`:
+
+```fish
+set --global FZF_COMPLETE 1
+```
+
+## Uninstall
+
+```console
+fisher remove lamchau/fzf
+```
+
+Fisher's event lifecycle will automatically clean up bindings, variables, and functions.
 
 ## Alternatives
 
-- [fzf.fish](https://github.com/patrickf3139/fzf.fish) is a newer fzf plugin with very similar features. It lacks fzf tab completion but includes functions for searching git log, git status, and browsing shell variables using fzf. Additionally, it is more likely to be maintained going forward. You can read more about the differences between it and this plugin on this `fzf.fish` [Wiki page](https://github.com/PatrickF1/fzf.fish/wiki/Prior-Art).
-- The `fzf` utility ships with its [own out-of-the-box Fish integration](https://github.com/junegunn/fzf/blob/master/shell/key-bindings.fish). What sets this package apart is that it has better shell integration, most notably tab completions. They are not compatible so use one or the other.
-
-[tmux]: https://tmux.github.io/
+- [fzf.fish](https://github.com/patrickf3139/fzf.fish) is a newer fzf plugin with similar features. It includes functions for searching git log, git status, and browsing shell variables.
+- The `fzf` utility ships with its [own out-of-the-box Fish integration](https://github.com/junegunn/fzf/blob/master/shell/key-bindings.fish). What sets this package apart is that it has tab completions. They are not compatible so use one or the other.
 
 ## License
 
