@@ -1,36 +1,18 @@
 function __fzf_find_file --description "List files and folders"
     set --local commandline (__fzf_parse_commandline)
-    set --local dir $commandline[1]
+    set --local --export dir $commandline[1]
     set --local fzf_query $commandline[2]
+    set --local prefix $commandline[3]
 
-    set --query FZF_FIND_FILE_COMMAND
-    or set --local FZF_FIND_FILE_COMMAND "
-    command find -L \$dir -mindepth 1 \\( -path \$dir'*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' \\) -prune \
-    -o -type f -print \
-    -o -type d -print \
-    -o -type l -print 2> /dev/null | sed 's@^\./@@'"
+    set --local --export FZF_DEFAULT_OPTS (__fzf_defaults \
+        "--reverse --walker=file,dir,follow,hidden --scheme=path" \
+        "--multi $FZF_CTRL_T_OPTS --print0")
 
-    set --local fzf_command (__fzfcmd)
-    set --local query_opts
-    if test -n "$fzf_query"
-        set query_opts "--query=$fzf_query"
-    end
+    set --local --export FZF_DEFAULT_COMMAND "$FZF_CTRL_T_COMMAND"
+    set --local --export FZF_DEFAULT_OPTS_FILE
 
-    set --local results
-    eval "$FZF_FIND_FILE_COMMAND | $fzf_command --multi $FZF_DEFAULT_OPTS $FZF_FIND_FILE_OPTS $query_opts" | while read --local s
-        set results $results $s
-    end
+    set --local result (eval (__fzfcmd) --walker-root=$dir --query=$fzf_query | string split0)
+    and commandline --replace --current-token -- (string join -- ' ' $prefix(string escape --no-quoted -- $result))' '
 
-    if test -z "$results"
-        commandline --function repaint
-        return
-    else
-        commandline --cut-at-cursor --current-token
-    end
-
-    for result in $results
-        commandline --insert -- (string escape $result)
-        commandline --insert -- " "
-    end
     commandline --function repaint
 end
